@@ -5,23 +5,6 @@
 
 using namespace std;
 
-/*
-struct node{
-	int label;
-	int amount;
-
-	node(){}
-	node(int l, int a = 0) : 
-	label(l), amount(a){}
-
-	inline bool operator== (const node& rhs){ return this->label == rhs.label; }
-	inline bool operator!= (const node& rhs){ return this->label != rhs.label; }
-	inline bool operator< (const node& rhs){ return this->label < rhs.label; }
-	inline bool operator<= (const node& rhs){ return this->label <= rhs.label; }
-	inline bool operator> (const node& rhs){ return this->label > rhs.label; }
-	inline bool operator>= (const node& rhs){ return this->label >= rhs.label; }
-};*/
-
 // ---------- //
 // Structures //
 // ---------- //
@@ -92,10 +75,11 @@ void load_graphs(string folder, int n_files){
 }
 
 bool comp(pii lhs, pii rhs){
+
 	return lhs.second > rhs.second;
 }
 
-void dfs(int graph, int node, map<int,int> & node_set, graph_t & g){
+void dfs(int graph, int node, set<int> & node_set, graph_t & g){
 	stack<int> ctrl;
 	map<int, bool> visited;
 
@@ -103,23 +87,32 @@ void dfs(int graph, int node, map<int,int> & node_set, graph_t & g){
 	visited[node] = true;
 
 	for (auto & e : documents[graph][ctrl.top()]){
-		if (node_set[e.node] == 0 and !visited[e.node]){
+		auto test = node_set.find(e.node) != node_set.end();
+
+		if (!test and !visited[e.node]){
 			ctrl.push(e.node);
 			visited[e.node] = true;
 
-		} else if (node_set[e.node] > 0 and !visited[e.node]) {
+		} else if (test and !visited[e.node]) {
 			g[node].push_back(edge(e.label, e.node));
+			visited[e.node] = true;
 		}
 	}
 	ctrl.pop();
 
 	while(!ctrl.empty()){
+
 		for (auto & e : documents[graph][ctrl.top()]){
-			if (node_set[e.node] == 0 and !visited[e.node]){
+			auto test = node_set.find(e.node) != node_set.end();
+
+			if (!test and !visited[e.node]){
 				ctrl.push(e.node);
 				visited[e.node] = true;
-			} else if (node_set[e.node] > 0 and !visited[e.node]){
+
+			} else if (test and !visited[e.node]) {
 				g[node].push_back(edge(e.label, e.node));
+				visited[e.node] = true;
+
 			}
 		}
 		ctrl.pop();
@@ -130,7 +123,7 @@ graph_t resize_graph(int graph, int new_size){
 	
 	graph_t g;
 	vector<pii> freq;
-	map<int,int> node_set;
+	set<int> node_set;
 
 	for (auto & e : frequency[graph])
 		freq.push_back(make_pair(e.first, e.second));
@@ -138,7 +131,7 @@ graph_t resize_graph(int graph, int new_size){
 	sort(freq.begin(), freq.end(), comp);
 
 	for (int i = 0; i < new_size; i++) {
-		node_set[freq[i].first] = freq[i].second;
+		node_set.insert(freq[i].first);
 	}
 
 	//cout << node_set.size() << endl;
@@ -146,8 +139,16 @@ graph_t resize_graph(int graph, int new_size){
 	for (int i = 0; i < new_size; i++){
 		dfs(graph, freq[i].first, node_set, g);
 	}
-	cout << g.size() << endl;
 	return g;
+}
+
+vector<graph_t> resize_documents(int new_size){
+	vector<graph_t> resized;
+	for (auto & e : documents) {
+		resized.push_back(resize_graph(e.first, new_size));
+	}
+
+	return resized;
 }
 
 // ----- //
