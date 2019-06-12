@@ -36,9 +36,9 @@ typedef map<node_t, vector<edge>> graph_t;
 map<int, graph_t> documents;
 map<int, map<node_t, int>> frequency;
 
-// ------- //
-// Methods //
-// ------- //
+// -------------- //
+// Pre-processing //
+// -------------- //
 void load_section(edge::label_t section, int graph, ifstream& inp){
 
 	int n;
@@ -151,6 +151,159 @@ vector<graph_t> resize_documents(int new_size){
 	return resized;
 }
 
+
+// --------------- //
+// K-means methods //
+// --------------- //
+
+//MAX
+int max(graph_t & a, graph_t & b ){
+	return max(a.size(), b.size());
+}
+
+//MAX SUBGRAFO COMUM
+
+int msc(graph_t & a, graph_t & b){
+	int intersec = 0;
+
+	for(auto & e : a){
+		if (!e.second.empty() and !b[e.first].empty())
+			intersec++;
+	}
+
+	return intersec;
+
+}
+
+/*
+graph_t msc(graph_t a, graph_t b ){
+
+	graph_t graph;
+
+	return graph;
+}*/
+/*
+//DISTANCIA
+float dist(graph_t a, graph_t b ){
+	float r = 1 - ((float) msc(a,b).size()/ ( (float) max(a,b)));
+	return r;
+}
+
+//MEDIANA
+graph_t median(vector<graph_t> pages){
+	int menor = 0;
+	int backup_somatorio = INT_MAX;
+	for (int i = 0; i < pages.size(); ++i) {
+		int somatorio = 0;
+
+		for (int j = 0; j < pages.size(); ++j){
+			somatorio += dist(pages[i],pages[j]);
+		}
+
+		float med = (somatorio/pages.size());
+
+		if (med < backup_somatorio) {
+			menor = i;
+			backup_somatorio = med;
+		}
+	}
+	return pages[menor];
+}
+
+void k_means(vector<graph_t> & docs, int k){
+	vector<graph_t> centroides_backup(k);
+
+	vector<graph_t> centroides(k);
+	vector<vector<graph_t>> clusters(k);
+
+	// Atribuição arbitrária dos centroides
+	for (int i = 0; i < 10; ++i) {
+		centroides[i] = docs[i];
+		clusters[i].push_back(docs[i]);
+	}
+
+	// atribuição arbitrária dos documentos por cluster
+	for (int i = 10; i < docs.size(); ++i){
+		clusters[i%k].push_back(docs[i]);
+	}
+
+
+	while(equal(centroides.begin(), centroides.end(), centroides_backup.begin()) == false){
+
+		//vector<graph_t> pages_new[pages.size()];
+
+		centroides_backup = centroides;
+
+		// calcular medianas
+		for (int i = 0; i < k; ++i)	{
+			centroides[i] = median(clusters[i]);
+		}
+
+		//CALCULANDO NOVOS CENTROIDES
+
+		//new_centroides(pages, centroides);
+
+		//MUDANDO AS PAGES DE CLUSTER
+		change_cluster(documents, centroides, pages_new);
+		
+
+
+		//ATUALIZANDO CLUSTERS
+		//pages = pages_new;
+	}
+
+	
+
+	while
+}*/
+/*
+void initial(vector<graph_t> pages, graph_t documents){
+	int count = 0;
+
+	//DEFINIÇÕES INICIAIS
+	for (int i = 0; i < pages.size(); ++i) {
+		centroides.push_back(documents[i]);
+	}
+
+	for (int i = 10; i < documents.size(); ++i)	{
+		pages[count].push_back(documents[i]);
+
+		count++;
+		if(count == page.size()){
+			count = 0;
+		}
+	}
+}
+
+void new_centroides(vector<graph_t> pages, vector<graph_t> centroides ){
+	for (int i = 0; i < pages.size(); ++i)
+	{
+		centroides[i] = median(pages[i]);
+	}
+}
+
+
+
+void change_cluster(vector<graph_t> documents, 
+	                vector<graph_t> centroides, 
+	                vector<graph_t> pages_new ){
+	for (int i = 0; i < documents.size(); ++i)
+	{
+
+		int choose = 0;
+		int new_cluster = dist(documents[i], centroides[0]);
+
+		for (int j = 1; j < centroides.size(); ++j)
+		{
+			int other_cluster = dist(documents[i], centroides[j]);
+			if(other_cluster < new_cluster){
+					choose = j;
+			}
+		}
+	pages_new[choose].push_back(documents[i]);
+	}
+}
+*/
 // ----- //
 // Debug //
 // ----- //
