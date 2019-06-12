@@ -3,14 +3,16 @@
 #include <map>
 #include <algorithm>
 
+using namespace std;
+
 
 //ASSSUMINDO QUE TEMOS O VETOR DE GRAFOS "DOCUMENTS"
 
-typedef std::map<int, std::vector<int>> Graphs;
+typedef map<int, vector<int>> Graphs;
 
 //MAX
 int max(Graphs a, Graphs b ){
-	return std::max(a.size(), b.size());
+	return max(a.size(), b.size());
 }
 
 //MAX SUBGRAFO COMUM
@@ -27,7 +29,7 @@ int dist(Graphs a, Graphs b ){
 
 //MEDIANA
 
-Graphs median(std::vector<Graphs> pages){
+Graphs median(vector<Graphs> pages){
 	Graphs menor = 0;
 	int backup_somatorio = 10000000;
 	for (int i = 0; i < pages.size(); ++i)
@@ -50,16 +52,9 @@ Graphs median(std::vector<Graphs> pages){
 	return pages[menor];
 }
 
-//MAIN
 
-int main(int argc, char const *argv[])
-{
-	std::vector<Graphs> centroides_backup;
-    
-    std::vector<Graphs> centroides;
 
-	std::vector<Graphs> pages[10];
-
+void initial(vector<Graphs> pages, Graphs documents){
 	int count = 0;
 
 	//DEFINIÇÕES INICIAIS
@@ -73,38 +68,63 @@ int main(int argc, char const *argv[])
 		pages[count].push_back(documents[i]);
 
 		count++;
-		if(count == 10){
+		if(count == page.size()){
 			count = 0;
 		}
 	}
-	//VERIFICAR SE MUDOU ALGO NOS CENTROIDES PARA PARAR
-	while(std::equal(centroides.begin(), centroides.end(), centroides_backup.begin()) == false){
+}
 
-		std::vector<Graphs> pages_new[pages.size()];
+void new_centroides(vector<Graphs> pages, vector<Graphs> centroides ){
+	for (int i = 0; i < pages.size(); ++i)
+	{
+		centroides[i] = median(pages[i]);
+	}
+}
+
+
+void change_cluster(Graphs documents, vector<Graphs> centroides, vector<Graphs> pages_new ){
+	for (int i = 0; i < documents.size(); ++i)
+	{
+
+		int choose = 0;
+		int new_cluster = dist(documents[i], centroides[0]);
+
+		for (int j = 1; j < centroides.size(); ++j)
+		{
+			int other_cluster = dist(documents[i], centroides[j]);
+			if(other_cluster < new_cluster){
+					choose = j;
+			}
+		}
+	pages_new[choose].push_back(documents[i]);
+	}
+}
+
+
+//MAIN
+
+int main(int argc, char const *argv[])
+{
+	vector<Graphs> centroides_backup;
+    
+    vector<Graphs> centroides;
+
+	vector<Graphs> pages[10];
+
+	initial(pages,documents);
+
+	//VERIFICAR SE MUDOU ALGO NOS CENTROIDES PARA PARAR
+	while(equal(centroides.begin(), centroides.end(), centroides_backup.begin()) == false){
+
+		vector<Graphs> pages_new[pages.size()];
 
 		//CALCULANDO NOVOS CENTROIDES
 		centroides_backup = centroides;
-		for (int i = 0; i < pages.size(); ++i)
-		{
-			centroides[i] = median(pages[i]);
-		}
+
+		new_centroides(pages,centroides);
 
 		//MUDANDO AS PAGES DE CLUSTER
-		for (int i = 0; i < documents.size(); ++i)
-		{
-
-			int choose = 0;
-			int new_cluster = dist(documents[i], centroides[0]);
-
-			for (int j = 1; j < centroides.size(); ++j)
-			{
-				int other_cluster = dist(documents[i], centroides[j]);
-				if(other_cluster < new_cluster){
-					choose = j;
-				}
-			}
-		pages_new[choose].push_back(documents[i]);
-		}
+		change_cluster(documents, centroides, pages_new);
 		//ATUALIZANDO CLUSTERS
 		pages = pages_new;
 	}
