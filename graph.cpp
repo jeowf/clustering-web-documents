@@ -37,6 +37,8 @@ const float MAX_DIST = 1.1;
 // ------ //
 map<int, graph_t> documents;
 map<int, map<node_t, int>> frequency;
+vector< vector<graph_t> > clusters;
+vector<int> assignments;
 
 // -------------- //
 // Pre-processing //
@@ -59,6 +61,26 @@ void load_section(edge::label_t section, int graph, ifstream& inp){
 			frequency[graph][n]++;
 		}
 	}
+}
+
+graph_t gen_key_search(istringstream& ss){
+
+	int n;
+	int prev = -1;
+	
+	graph_t g;
+
+	while (ss >> n){
+		if (prev == -1){
+			prev = n;
+
+		} else if (n > 1 and prev != n){
+			g[prev].push_back(edge(edge::label_t::TEXT,n));
+			prev = n;
+		}
+	}
+
+	return g;
 }
 
 void load_graphs(string folder, int n_files){
@@ -100,7 +122,7 @@ void dfs(int graph, int node, set<int> & node_set, graph_t & g){
 			visited[e.node] = true;
 		}
 	}
-	ctrl.pop();
+	ctrl.pop(); 
 
 	while(!ctrl.empty()){
 
@@ -160,6 +182,7 @@ vector<graph_t> resize_documents(int new_size){
 
 //MAX
 int max(graph_t & a, graph_t & b ){
+
 	return max(a.size(), b.size());
 }
 
@@ -168,22 +191,30 @@ int max(graph_t & a, graph_t & b ){
 int msc(graph_t & a, graph_t & b){
 	int intersec = 0;
 
-	for(auto & e : a){
-		if (!e.second.empty() and !b[e.first].empty())
-			intersec++;
-	}
+	graph_t g_msc;
 
+	for(auto & e : a){
+		if (!e.second.empty() and !b[e.first].empty()){
+
+			for (auto & f : e.second) {
+				for (auto & g : b[e.first]) {
+					if (f.node == g.node and f.label == g.label){
+						g_msc[e.first].push_back(f);
+						intersec++;
+						break;
+
+					}
+				}
+			}
+		}
+			
+	}
+	//cout << intersec << endl;
 	return intersec;
 
 }
 
-/*
-graph_t msc(graph_t a, graph_t b ){
 
-	graph_t graph;
-
-	return graph;
-}*/
 
 //DISTANCIA
 float dist(graph_t a, graph_t b ){
@@ -234,7 +265,7 @@ bool comp(graph_t & lhs, graph_t & rhs){
 	return true;
 }
 
-bool comp_graph_vec(vector<graph_t> & lhs, vector<graph_t> & rhs){
+bool comp_graph_vec(vector<graph_t>  lhs, vector<graph_t>  rhs){
 
 	if (lhs.size() != rhs.size())
 		return true;
@@ -248,11 +279,122 @@ bool comp_graph_vec(vector<graph_t> & lhs, vector<graph_t> & rhs){
 
 }
 
-vector<graph_t> k_means(vector<graph_t> & docs, int k){
+/*
+vector<graph_t> k_means(const vector<graph_t> & docs, int k){
+	vector<graph_t> prev_means(k);
+	vector<graph_t> means(k);
+
+	vector<int> r_index(docs.size());
+	for (int i = 0; i < docs.size(); ++i)
+		r_index.push_back(i);
+
+	random_shuffle(r_index.begin(), r_index.end());
+
+	for (int i = 0; i < k; ++i) {
+		means[i] = docs[r_index[i]];
+	}
+
+	vector<int> assignments(docs.size());
+
+	int it = 0;
+	int max_it = 100;
+	//while(1){
+	while(!comp_graph_vec(means, prev_means)){
+
+		for (int i = 0; i < docs.size(); i++) {
+			float min_dist = 999999999;
+			int c = 0;
+
+			for (int clt = 0; clt < k; ++clt) {
+				float d = dist(docs[i], means[clt]);
+				if (d < min_dist){
+					c = clt;
+					min_dist = d;
+				}
+			}
+
+			assignments[i] = c;
+
+		}
+
+		vector< vector<graph_t> > c_elements(k);
+
+		for (int i = 0; i < docs.size(); ++i) {
+			c_elements[ assignments[i] ].push_back(docs[i]);
+		}
+
+		for (int i = 0; i < k; ++i)	{
+			if (!c_elements[i].empty()){
+				int m = median(c_elements[i]);
+				//centroides[i].clear();
+				means[i] = c_elements[i][m];
+				//c_elements[i].clear();
+			}
+		}
+
+		// vector<graph_t> new_means(k);
+		// vector<int> counts(k,0);
+
+		// for (int i = 0; i < docs.size(); ++i) {
+		// 	const auto cluster = assignments[i];
+		// 	new_means[cluster].x += data[i].x;
+		// 	new_means[cluster].y += data[i].y;
+		// 	counts[cluster] += 1;
+		// }
+
+		prev_means = means;
+
+		cout << it << endl;
+
+
+		if (it++ >= max_it){
+			cout << "BREAK!!\n";
+			break;
+		}
+	}
+
+	vector<int> res(k, 0);
+
+	for (int i = 0; i < docs.size(); ++i) {
+		res[assignments[i]]++;
+	}
+
+	int total = 0;
+	for (int i = 0; i < k; ++i)
+	{
+		cout << i << " : " << res[i] << endl;
+		total += res[i];
+	}
+
+	cout << "TOTAL: " << total << endl;
+	cout << "opa";
+
+	return means;
+}*/
+
+
+int best_cluster(graph_t g, const vector<graph_t> & centroides){
+
+
+	float min_dist = 999999;
+	int c = 0;
+	for (int clt = 0; clt < centroides.size(); ++clt) {
+		float d = dist(g,centroides[clt]);
+		if (d < min_dist){
+			c = clt;
+			min_dist = d;
+		}
+	}
+	return c;
+
+}
+
+vector<graph_t> k_means(const vector<graph_t> & docs, int k){
+	clusters.resize(k);
+	assignments.resize(docs.size());
 	vector<graph_t> centroides_backup(k);
 
 	vector<graph_t> centroides(k);
-	vector< vector<graph_t> > clusters(k);
 
 	// Atribuição arbitrária dos centroides
 	for (int i = 0; i < k; ++i) {
@@ -261,7 +403,7 @@ vector<graph_t> k_means(vector<graph_t> & docs, int k){
 	}
 
 	// atribuição arbitrária dos documentos por cluster
-	for (int i = k; i < docs.size(); ++i){
+	for (int i = 0; i < docs.size(); ++i){
 		clusters[i%k].push_back(docs[i]);
 	}
 
@@ -270,40 +412,42 @@ vector<graph_t> k_means(vector<graph_t> & docs, int k){
 	int max_it = docs.size() * docs.size();
 
 	while(!comp_graph_vec(centroides, centroides_backup)){
+	//while(iterations < 100){
 		
 		centroides_backup = centroides;
 
 		// calcular medianas
 		for (int i = 0; i < k; ++i)	{
-			int m = median(clusters[i]);
-			centroides[i] = clusters[i][m];
+			if (!clusters[i].empty()){
+				int m = median(clusters[i]);
+				centroides[i].clear();
+				centroides[i] = clusters[i][m];
+				clusters[i].clear();
+			}
 		}
 
-		for (int i = 0; i < k; ++i) {
-			vector<graph_t> emp;
-			clusters[i] = emp;
-		}
 
-		for (auto & e : docs) {
-			float min_dist = MAX_DIST;
+		for (int i = 0; i < docs.size(); i++) {
+			float min_dist = 999999;
 			int c = 0;
 			for (int clt = 0; clt < k; ++clt) {
-				float d = dist(e,centroides[clt]);
+				float d = dist(docs[i],centroides[clt]);
 				if (d < min_dist){
 					c = clt;
 					min_dist = d;
 				}
 			}
-			clusters[c].push_back(e);
+			clusters[c].push_back(docs[i]);
+			assignments[i] = c;
 
 		}
 
-
+		//cout << iterations << endl;
 		if (iterations++ > max_it)
 			break;
 
 	}
-
+/*
 	cout << "nodes of centroid 0:\n";
 
 	for(int i = 0; i < k; i++){
@@ -320,65 +464,20 @@ vector<graph_t> k_means(vector<graph_t> & docs, int k){
 
 		total += clusters[i].size();
 	}
-	cout << "TOTAL: " << total;
+	cout << "TOTAL: " << total << endl;
+
+
+*/
+
 	return centroides;
 }
-/*
-void initial(vector<graph_t> pages, graph_t documents){
-	int count = 0;
 
-	//DEFINIÇÕES INICIAIS
-	for (int i = 0; i < pages.size(); ++i) {
-		centroides.push_back(documents[i]);
-	}
-
-	for (int i = 10; i < documents.size(); ++i)	{
-		pages[count].push_back(documents[i]);
-
-		count++;
-		if(count == page.size()){
-			count = 0;
-		}
-	}
-}
-
-void new_centroides(vector<graph_t> pages, vector<graph_t> centroides ){
-	for (int i = 0; i < pages.size(); ++i)
-	{
-		centroides[i] = median(pages[i]);
-	}
-}
-
-
-
-void change_cluster(vector<graph_t> documents, 
-	                vector<graph_t> centroides, 
-	                vector<graph_t> pages_new ){
-	for (int i = 0; i < documents.size(); ++i)
-	{
-
-		int choose = 0;
-		int new_cluster = dist(documents[i], centroides[0]);
-
-		for (int j = 1; j < centroides.size(); ++j)
-		{
-			int other_cluster = dist(documents[i], centroides[j]);
-			if(other_cluster < new_cluster){
-					choose = j;
-			}
-		}
-	pages_new[choose].push_back(documents[i]);
-	}
-}
-*/
 // ----- //
 // Debug //
 // ----- //
 void print_graph(int graph){
 	for(auto & e : documents[graph]){
-		cout << e.first 
-		     << "(" << frequency[graph][e.first] 
-		     << "," <<e.second.size() << ")\n";
+		cout << e.first << "\n";
 
 		for (auto &f: e.second) {
 			cout << " " << f.node; 
@@ -388,14 +487,14 @@ void print_graph(int graph){
 }
 
 void print_graph(graph_t & graph){
-	//cout << "aaa\n";
+
 	for(auto & e : graph){
-		cout << e.first << " : " << e.second.size() << "\n";
+		cout << e.first << ":{";
 
 		for (auto &f: e.second) {
 			cout << " " << f.node; 
 		}
-		cout << endl;
+		cout << "}" << endl;
 	}
 }
 
