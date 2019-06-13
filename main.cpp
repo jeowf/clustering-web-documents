@@ -16,14 +16,14 @@ void f(){
 		cout << "K = " << k << endl;
 
 		for (auto & g : gs) {
-			cout << "G = " << g << endl;
+			cout << " G = " << g << endl;
 
 			load_graphs("files/", 727);
 			auto r_doc = resize_documents(g);
 			auto means = k_means(r_doc, k);
 			
 			for (int i = 0; i < k; i++){
-				cout << i << " : " << clusters[i].size() << endl;
+				cout << "  " << i << " : " << clusters[i].size() << endl;
 
 			}
 
@@ -33,6 +33,7 @@ void f(){
 			assignments.clear();
 
 		}
+		cout << endl;
 	}
 
 	
@@ -40,6 +41,11 @@ void f(){
 
 int main(){
 
+#ifdef DATA
+	f();
+	return 0;
+
+#endif
 
 	cout << "Carregando arquivos...\n";
 	load_graphs("files/", 727);
